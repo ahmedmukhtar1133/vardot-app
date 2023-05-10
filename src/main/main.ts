@@ -14,7 +14,8 @@ import { autoUpdater } from 'electron-updater';
 import Store from 'electron-store';
 import log from 'electron-log';
 import MenuBuilder from './menu';
-import { resolveHtmlPath } from './util';
+// import { resolveHtmlPath } from './util';
+import express from './express';
 
 const store = new Store(); // persistant store
 
@@ -22,11 +23,13 @@ class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
+    // autoUpdater.checkForUpdatesAndNotify(); // temporary disable due to github URL 404 error
   }
 }
 
 let mainWindow: BrowserWindow | null = null;
+
+express();
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -81,8 +84,8 @@ const createWindow = async () => {
 
   mainWindow = new BrowserWindow({
     show: false,
-    width: 1024,
-    height: 728,
+    width: 1200,
+    height: 900,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -91,7 +94,7 @@ const createWindow = async () => {
     },
   });
 
-  mainWindow.loadURL(resolveHtmlPath('index.html'));
+  mainWindow.loadURL('http://localhost/');
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
