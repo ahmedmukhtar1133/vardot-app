@@ -47,7 +47,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainSection = document.querySelector('.region');
     const copyRight = document.querySelector('.copy-right');
     const versionEle = document.createElement('p');
-    versionEle.innerText = `v${packageJ?.version}`;
+
+    versionEle.innerText = `v${
+      electronHandler.store.get('app-version') || '1.0.0'
+    }`;
     // @ts-expect-error
     versionEle.style =
       'margin-left: 20%; font-size: 12px; font-weight: 600; color: #0072bc';

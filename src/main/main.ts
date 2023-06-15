@@ -10,24 +10,26 @@
  */
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain } from 'electron';
-import { autoUpdater } from 'electron-updater';
+// import { autoUpdater } from 'electron-updater';
 import Store from 'electron-store';
-import log from 'electron-log';
+// import log from 'electron-log';
 import MenuBuilder from './menu';
 // import { resolveHtmlPath } from './util';
 import express from './express';
+import { checkForUpdatesAndNotify } from './custom-update';
 
 const store = new Store(); // persistant store
 
+let mainWindow: BrowserWindow | null = null;
+
 class AppUpdater {
-  constructor() {
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
+  constructor(win: any) {
+    // log.transports.file.level = 'info';
+    // autoUpdater.logger = log;
+    checkForUpdatesAndNotify(win);
     // autoUpdater.checkForUpdatesAndNotify(); // temporary disable due to github URL 404 error
   }
 }
-
-let mainWindow: BrowserWindow | null = null;
 
 express();
 
@@ -122,7 +124,7 @@ const createWindow = async () => {
 
   // Remove this if your app does not use auto updates
   // eslint-disable-next-line
-  new AppUpdater();
+  new AppUpdater(mainWindow);
 };
 
 /**
