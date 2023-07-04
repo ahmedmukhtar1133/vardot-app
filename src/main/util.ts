@@ -1,9 +1,12 @@
 /* eslint import/prefer-default-export: off */
 // import { URL } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 export const releaseApi =
-  'https://development-q5nzhaa-3cez2wngsbbr2.fr-3.platformsh.site/sites/default/files/offline-app/offline.json ';
+  'https://development-q5nzhaa-3cez2wngsbbr2.fr-3.platformsh.site/sites/default/files/offline-app/offline.json';
+export const releaseApiAuth =
+  'https://development-q5nzhaa-3cez2wngsbbr2.fr-3.platformsh.site/sites/default/files/offline-app/login-offline.json';
 
 export function resolveHtmlPath() {
   if (process.env.NODE_ENV === 'development')
@@ -15,6 +18,12 @@ export function resolveAppPath() {
   if (process.env.NODE_ENV === 'development')
     return path.join(__dirname, '../../release/');
   return path.join(__dirname, '../../../release/');
+}
+
+export function getBuildType() {
+  const buildFilePath = path.join(resolveAppPath(), 'BUILD_TYPE.txt');
+  const buildType = fs.readFileSync(buildFilePath);
+  return buildType.toString()?.trim();
 }
 
 export function incrementVersion(currentVersion: string) {

@@ -21,8 +21,20 @@ npm start
 
 ## Packaging for Production
 
+Before packaging app make sure you've below html directories inside `release` directory:
+- htmlLoggedIn (Auth/LoggedIn version)
+- htmlLoggedOut (LoggedOut version)
+
+Note: Names of directories must be same as mentioned above.
+
 To package apps for the local platform:
 
+For LoggedOut version:
 ```bash
 npm run package
+```
+
+For LoggedIn/Auth version:
+```bash
+npm run package:auth
 ```

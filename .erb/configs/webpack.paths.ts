@@ -9,6 +9,9 @@ const srcMainPath = path.join(srcPath, 'main');
 const srcRendererPath = path.join(srcPath, 'renderer');
 
 const releasePath = path.join(rootPath, 'release');
+const htmlPath = path.join(releasePath, 'html');
+const htmlLoggedOutPath = path.join(releasePath, 'htmlLoggedOut');
+const htmlLoggedInPath = path.join(releasePath, 'htmlLoggedIn');
 const appPath = path.join(releasePath, 'app');
 const appPackagePath = path.join(appPath, 'package.json');
 const appNodeModulesPath = path.join(appPath, 'node_modules');
@@ -35,4 +38,7 @@ export default {
   distMainPath,
   distRendererPath,
   buildPath,
+  htmlLoggedInPath,
+  htmlLoggedOutPath,
+  htmlPath,
 };

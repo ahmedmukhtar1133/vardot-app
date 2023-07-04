@@ -17,6 +17,7 @@ import MenuBuilder from './menu';
 // import { resolveHtmlPath } from './util';
 import express from './express';
 import { checkForUpdatesAndNotify } from './custom-update';
+import { getBuildType } from './util';
 
 const store = new Store(); // persistant store
 
@@ -26,6 +27,7 @@ class AppUpdater {
   constructor(win: any) {
     // log.transports.file.level = 'info';
     // autoUpdater.logger = log;
+    store.set('appEnv', getBuildType());
     checkForUpdatesAndNotify(win);
     // autoUpdater.checkForUpdatesAndNotify(); // temporary disable due to github URL 404 error
   }

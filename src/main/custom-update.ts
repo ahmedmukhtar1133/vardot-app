@@ -2,7 +2,12 @@
 /* eslint-disable import/prefer-default-export */
 import { dialog } from 'electron';
 import fs from 'fs';
-import { resolveAppPath, releaseApi, incrementVersion } from './util';
+import {
+  resolveAppPath,
+  releaseApi,
+  incrementVersion,
+  releaseApiAuth,
+} from './util';
 
 const axios = require('axios');
 const Store = require('electron-store');
@@ -62,14 +67,14 @@ const downloadUpdate = async (
       downloadedSize += chunk.length;
       const progress = (downloadedSize / totalSize) /** *100 */
         .toFixed(2);
-      process.stdout.cursorTo(0);
-      process.stdout.write(`Downloading... ${progress}%`);
+      // process.stdout.cursorTo(0);
+      // process.stdout.write(`Downloading... ${progress}%`);
       writer.write(chunk);
       if (mainWindow) mainWindow.setProgressBar(Number(progress));
     });
 
     response.data.on('end', () => {
-      process.stdout.cursorTo(0);
+      // process.stdout.cursorTo(0);
       setTimeout(() => onUpdateDownloaded(mainWindow, updateDate), 5000);
       writer.end();
     });
@@ -79,7 +84,11 @@ const downloadUpdate = async (
 };
 
 export const checkForUpdatesAndNotify = async (mainWindow: any) => {
-  const response = await axios({ url: releaseApi, method: 'get' });
+  const isAuthAppEnv = store.get('appEnv') === 'auth';
+  const response = await axios({
+    url: isAuthAppEnv ? releaseApiAuth : releaseApi,
+    method: 'get',
+  });
 
   if (response.data?.date) {
     const lastUpdate = store.get('update-date'); // update available
