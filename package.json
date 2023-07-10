@@ -196,6 +196,7 @@
       ]
     },
     "win": {
+      "icon": "./assets/icon.svg",
       "target": [
         "nsis"
       ]
