@@ -97,8 +97,7 @@ export const checkForUpdatesAndNotify = async (mainWindow: any) => {
         .showMessageBox({
           type: 'info',
           title: 'Install Updates',
-          message:
-            'An update is available. Do you want to download and upgrade now?',
+          message: `An update is available. Do you want to download and upgrade now?\n\nUpdate size: ${response.data.size}`,
           buttons: ['Yes', 'Later'],
         })
         .then(async (buttonIndex) => {
