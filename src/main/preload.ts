@@ -1,7 +1,11 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import packageJ from '../../release/app/package.json';
+import {
+  contextBridge,
+  ipcRenderer,
+  IpcRendererEvent,
+  ipcMain,
+} from 'electron';
 
 export type Channels = 'ipc-example';
 
@@ -37,6 +41,12 @@ contextBridge.exposeInMainWorld('electron', electronHandler);
 
 export type ElectronHandler = typeof electronHandler;
 
+const addStyle = () => {
+  const style = document.createElement('style');
+  document.body.append(style);
+  return (styleString: any) => (style.textContent = styleString);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     // remove target blank from logo anchor
@@ -61,5 +71,53 @@ document.addEventListener('DOMContentLoaded', () => {
     clonedV.style = 'font-size: 12px; font-weight: 600; color: #ffffff';
     // @ts-expect-error
     copyRight?.insertAdjacentElement('afterend', clonedV);
+
+    // update notification handling dynamically
+    let updateCounter = 0;
+    const updateHandler = setInterval(() => {
+      ipcRenderer
+        .invoke('get-download-status')
+        .then((response) => {
+          const notificationText = document.getElementById('notification-text');
+          if (!response || response?.updateMessage?.includes('Downloaded')) {
+            document.getElementById('notification')?.classList.add('hide');
+            return;
+          }
+
+          document.getElementById('notification')?.classList.remove('hide');
+          if (notificationText)
+            notificationText.innerText = response.updateMessage;
+        })
+        .catch((error) => {
+          updateCounter++;
+          if (updateCounter > 20) {
+            clearInterval(updateHandler);
+            document.getElementById('notification')?.classList.add('hide');
+          }
+        });
+    }, 5000);
+
+    document
+      .querySelector('#main-content')
+      ?.insertAdjacentHTML(
+        'beforeend',
+        `<div id="notification" class="hide"> <p id="notification-text"></p></div>`
+      );
+
+    addStyle()(`#notification {
+  position: fixed;
+  width: 350px;
+  bottom: 0;
+  right: 0;
+  background: #0072bc;
+  color: white;
+  padding: 15px;
+  z-index: 10;
+  /* Rest of your styling */
+}
+.hide {
+  display: none;
+}
+`);
   }, 100);
 });

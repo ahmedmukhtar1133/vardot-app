@@ -8,6 +8,7 @@ import {
   incrementVersion,
   releaseApiAuth,
 } from './util';
+import { ipcMain } from 'electron';
 
 const axios = require('axios');
 const Store = require('electron-store');
@@ -62,21 +63,41 @@ const downloadUpdate = async (
 
     const totalSize = response.headers['content-length'];
     let downloadedSize = 0;
+    let progress = '';
+    let error = '';
+    let updateMessage = '';
 
     response.data.on('data', (chunk: any) => {
       downloadedSize += chunk.length;
-      const progress = (downloadedSize / totalSize) /** *100 */
+      progress = (downloadedSize / totalSize) /** *100 */
         .toFixed(2);
       // process.stdout.cursorTo(0);
       // process.stdout.write(`Downloading... ${progress}%`);
       writer.write(chunk);
+      updateMessage = `Downloading Update: ${progress}`;
+      console.log('Downloading update...', progress);
       if (mainWindow) mainWindow.setProgressBar(Number(progress));
     });
 
     response.data.on('end', () => {
       // process.stdout.cursorTo(0);
+      console.log('Downloaded Update');
+      updateMessage = `Downloaded Update.`;
       setTimeout(() => onUpdateDownloaded(mainWindow, updateDate), 5000);
       writer.end();
+    });
+
+    response.data.on('error', (err: any) => {
+      updateMessage = `Error occurred while downloading: ${
+        err.message
+      } ${JSON.stringify(err)}`;
+      console.error('Download Failed', err);
+      writer.end();
+    });
+
+    ipcMain.handle('get-download-status', async (event, ...args) => {
+      if (!progress) return false;
+      return { progress, updateMessage, error };
     });
   } catch (error) {
     console.error('Error occurred while downloading file:', error);
