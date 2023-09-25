@@ -76,7 +76,7 @@ const downloadUpdate = async (
       // writer.write(chunk);
       updateMessage = `Downloading Update: ${progress}`;
       console.log('Downloading update...', progress);
-      if (mainWindow) mainWindow.setProgressBar(Number(progress));
+      if (mainWindow) mainWindow.setProgressBar(Number(progress) / 100);
     });
 
     response.body.pipe(writer);
