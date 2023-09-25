@@ -9,6 +9,7 @@ import {
   releaseApiAuth,
 } from './util';
 import { ipcMain } from 'electron';
+import fetch from 'node-fetch';
 
 const axios = require('axios');
 const Store = require('electron-store');
@@ -55,31 +56,32 @@ const downloadUpdate = async (
   });
 
   try {
-    const response = await axios({
-      method: 'get',
-      url,
-      responseType: 'stream',
-    });
+    const response = await fetch(url, { timeout: 3600000 });
 
-    const totalSize = response.headers['content-length'];
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const totalSize = Number(response.headers.get('content-length'));
     let downloadedSize = 0;
     let progress = '';
     let error = '';
     let updateMessage = '';
 
-    response.data.on('data', (chunk: any) => {
+    response.body.on('data', (chunk: any) => {
       downloadedSize += chunk.length;
-      progress = (downloadedSize / totalSize) /** *100 */
-        .toFixed(2);
+      progress = ((downloadedSize / totalSize) * 100).toFixed(2);
       // process.stdout.cursorTo(0);
       // process.stdout.write(`Downloading... ${progress}%`);
-      writer.write(chunk);
+      // writer.write(chunk);
       updateMessage = `Downloading Update: ${progress}`;
       console.log('Downloading update...', progress);
       if (mainWindow) mainWindow.setProgressBar(Number(progress));
     });
 
-    response.data.on('end', () => {
+    response.body.pipe(writer);
+
+    writer.on('finish', () => {
       // process.stdout.cursorTo(0);
       console.log('Downloaded Update');
       updateMessage = `Downloaded Update.`;
@@ -87,7 +89,7 @@ const downloadUpdate = async (
       writer.end();
     });
 
-    response.data.on('error', (err: any) => {
+    writer.on('error', (err: any) => {
       updateMessage = `Error occurred while downloading: ${
         err.message
       } ${JSON.stringify(err)}`;
