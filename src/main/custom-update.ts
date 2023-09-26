@@ -29,7 +29,7 @@ const showNotification = (title: string, body: string) => {
 const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
   // const zip = new AdmZip(zipPath);
   // zip.extractAllTo(resolveAppPath(), true);
-  logger.info('Extracting downloaded update...');
+  logger.info('Extracting downloaded update...' + updateDate);
   showNotification(
     'Installing Updates',
     'Updates are being installed, it might take few minutes.'
@@ -47,6 +47,7 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
         store.get(`app-version-${buildType}`) || '1.0.0'
       );
       store.set(`app-version-${buildType}`, newVersion);
+      if (mainWindow) mainWindow.setProgressBar(-1);
       if (isAuthAppEnv && fs.existsSync(`${resolveAppPath()}html-login`)) {
         try {
           logger.info(`Rename "html-login" directory to "html"`);
@@ -59,24 +60,22 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
             `${resolveAppPath()}html`
           );
         } catch (error) {
+          if (mainWindow) mainWindow.setProgressBar(-1);
           logger.error('Rename Error:' + JSON.stringify(error));
         }
       }
-      showNotification(
-        'Updates Installed',
-        'Updates are installed successfully!.'
-      );
+
       logger.info(`Update installed succesfully... ${newVersion}`);
+      dialog
+        .showMessageBox({
+          type: 'info',
+          title: 'Updates Insalled',
+          message: 'Updates are installed successfully!',
+          buttons: ['OK'],
+        })
+        .then(() => mainWindow.reload())
+        .catch(console.error);
       mainWindow.reload();
-      // dialog
-      //   .showMessageBox({
-      //     type: 'info',
-      //     title: 'Update downloaded',
-      //     message: 'Update was downloaded successfully, please install now!',
-      //     buttons: ['Install'],
-      //   })
-      //   .then(() => mainWindow.reload())
-      //   .catch(console.error);
     })
     .catch((err: any) => {
       logger.error(`Update installation failed: ${err.message}`);
@@ -164,10 +163,10 @@ export const checkForUpdatesAndNotify = async (mainWindow: any) => {
     const lastUpdate = store.get(`update-date-${buildType}`); // update available
     logger.info(`Last Update: ${lastUpdate}`);
     logger.info(
-      `Update comparison ${
-        (new Date(lastUpdate),
-        new Date(response.data.date),
-        new Date(lastUpdate) < new Date(response.data.date))
+      `Update comparison ${lastUpdate} ${new Date(lastUpdate)} ${new Date(
+        response.data.date
+      )}
+      ${new Date(lastUpdate) < new Date(response.data.date)}
       }`
     );
     if (!lastUpdate || new Date(lastUpdate) < new Date(response.data.date)) {
