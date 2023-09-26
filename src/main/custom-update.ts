@@ -9,6 +9,8 @@ import {
   releaseApiAuth,
 } from './util';
 import { ipcMain } from 'electron';
+import logger from '../logger/logger';
+// @ts-expect-error
 import fetch from 'node-fetch';
 
 const axios = require('axios');
@@ -23,25 +25,32 @@ const zipPath = `${resolveAppPath()}html.zip`;
 const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
   // const zip = new AdmZip(zipPath);
   // zip.extractAllTo(resolveAppPath(), true);
+  logger.info('Extracting downloaded update...');
   decompress(zipPath, resolveAppPath(), {
     plugins: [decompressTargz()],
   })
     .then(() => {
+      logger.info('Update extracted...');
       store.set('update-date', updateDate);
       // eslint-disable-next-line promise/always-return
       const newVersion = incrementVersion(store.get('app-version') || '1.0.0');
       store.set('app-version', newVersion);
-      dialog
-        .showMessageBox({
-          type: 'info',
-          title: 'Update downloaded',
-          message: 'Update was downloaded successfully, please install now!',
-          buttons: ['Install'],
-        })
-        .then(() => mainWindow.reload())
-        .catch(console.error);
+      logger.info(`Update installed succesfully... ${newVersion}`);
+      mainWindow.reload();
+      // dialog
+      //   .showMessageBox({
+      //     type: 'info',
+      //     title: 'Update downloaded',
+      //     message: 'Update was downloaded successfully, please install now!',
+      //     buttons: ['Install'],
+      //   })
+      //   .then(() => mainWindow.reload())
+      //   .catch(console.error);
     })
-    .catch(console.error);
+    .catch((err: any) => {
+      logger.error(`Update installation failed: ${err.message}`);
+      logger.error(JSON.stringify(err));
+    });
 };
 
 const downloadUpdate = async (
@@ -56,6 +65,7 @@ const downloadUpdate = async (
   });
 
   try {
+    logger.info('Start update downloading...');
     const response = await fetch(url, { timeout: 3600000 });
 
     if (!response.ok) {
@@ -68,6 +78,8 @@ const downloadUpdate = async (
     let error = '';
     let updateMessage = '';
 
+    logger.info(`Update total size: ${totalSize}`);
+
     response.body.on('data', (chunk: any) => {
       downloadedSize += chunk.length;
       progress = ((downloadedSize / totalSize) * 100).toFixed(2);
@@ -75,7 +87,7 @@ const downloadUpdate = async (
       // process.stdout.write(`Downloading... ${progress}%`);
       // writer.write(chunk);
       updateMessage = `Downloading Update: ${progress}`;
-      console.log('Downloading update...', progress);
+      logger.info(`Downloading Update: ${progress}`);
       if (mainWindow) mainWindow.setProgressBar(Number(progress) / 100);
     });
 
@@ -83,13 +95,15 @@ const downloadUpdate = async (
 
     writer.on('finish', () => {
       // process.stdout.cursorTo(0);
-      console.log('Downloaded Update');
+      logger.info('Downloaded Update');
       updateMessage = `Downloaded Update.`;
-      setTimeout(() => onUpdateDownloaded(mainWindow, updateDate), 5000);
+      setTimeout(() => onUpdateDownloaded(mainWindow, updateDate), 2000);
       writer.end();
     });
 
     writer.on('error', (err: any) => {
+      logger.info(`Error occurred while downloading: ${err.message}`);
+      logger.info(`Error: ${JSON.stringify(err)}`);
       updateMessage = `Error occurred while downloading: ${
         err.message
       } ${JSON.stringify(err)}`;
@@ -113,8 +127,17 @@ export const checkForUpdatesAndNotify = async (mainWindow: any) => {
     method: 'get',
   });
 
+  logger.info('Check For Updates...');
   if (response.data?.date) {
     const lastUpdate = store.get('update-date'); // update available
+    logger.info(`Last Update: ${lastUpdate}`);
+    logger.info(
+      `Update comparison ${
+        (new Date(lastUpdate),
+        new Date(response.data.date),
+        new Date(lastUpdate) < new Date(response.data.date))
+      }`
+    );
     if (!lastUpdate || new Date(lastUpdate) < new Date(response.data.date)) {
       dialog
         .showMessageBox({
