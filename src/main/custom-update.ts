@@ -7,6 +7,7 @@ import {
   releaseApi,
   incrementVersion,
   releaseApiAuth,
+  getBuildType,
 } from './util';
 import { ipcMain } from 'electron';
 import logger from '../logger/logger';
@@ -31,10 +32,12 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
   })
     .then(() => {
       logger.info('Update extracted...');
-      store.set('update-date', updateDate);
+      store.set(`update-date-${getBuildType()}`, updateDate);
       // eslint-disable-next-line promise/always-return
-      const newVersion = incrementVersion(store.get('app-version') || '1.0.0');
-      store.set('app-version', newVersion);
+      const newVersion = incrementVersion(
+        store.get(`app-version-${getBuildType()}`) || '1.0.0'
+      );
+      store.set(`app-version-${getBuildType()}`, newVersion);
       logger.info(`Update installed succesfully... ${newVersion}`);
       mainWindow.reload();
       // dialog
@@ -129,7 +132,7 @@ export const checkForUpdatesAndNotify = async (mainWindow: any) => {
 
   logger.info('Check For Updates...');
   if (response.data?.date) {
-    const lastUpdate = store.get('update-date'); // update available
+    const lastUpdate = store.get(`update-date-${getBuildType()}`); // update available
     logger.info(`Last Update: ${lastUpdate}`);
     logger.info(
       `Update comparison ${
