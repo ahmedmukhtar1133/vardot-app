@@ -58,8 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const copyRight = document.querySelector('.copy-right');
     const versionEle = document.createElement('p');
 
+    const buildType = electronHandler.store.get('appEnv');
     versionEle.innerText = `v${
-      electronHandler.store.get('app-version') || '1.0.0'
+      electronHandler.store.get(`app-version-${buildType}`) || '1.0.0'
     }`;
     // @ts-expect-error
     versionEle.style =

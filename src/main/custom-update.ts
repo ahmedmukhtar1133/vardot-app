@@ -7,9 +7,8 @@ import {
   releaseApi,
   incrementVersion,
   releaseApiAuth,
-  getBuildType,
 } from './util';
-import { ipcMain } from 'electron';
+import { ipcMain, Notification } from 'electron';
 import logger from '../logger/logger';
 // @ts-expect-error
 import fetch from 'node-fetch';
@@ -23,21 +22,50 @@ const decompressTargz = require('decompress-targz');
 const store = new Store();
 const zipPath = `${resolveAppPath()}html.zip`;
 
+const showNotification = (title: string, body: string) => {
+  new Notification({ title, body }).show();
+};
+
 const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
   // const zip = new AdmZip(zipPath);
   // zip.extractAllTo(resolveAppPath(), true);
   logger.info('Extracting downloaded update...');
+  showNotification(
+    'Installing Updates',
+    'Updates are being installed, it might take few minutes.'
+  );
   decompress(zipPath, resolveAppPath(), {
     plugins: [decompressTargz()],
   })
     .then(() => {
+      const buildType = store.get('appEnv');
+      const isAuthAppEnv = buildType === 'auth';
       logger.info('Update extracted...');
-      store.set(`update-date-${getBuildType()}`, updateDate);
+      store.set(`update-date-${buildType}`, updateDate);
       // eslint-disable-next-line promise/always-return
       const newVersion = incrementVersion(
-        store.get(`app-version-${getBuildType()}`) || '1.0.0'
+        store.get(`app-version-${buildType}`) || '1.0.0'
       );
-      store.set(`app-version-${getBuildType()}`, newVersion);
+      store.set(`app-version-${buildType}`, newVersion);
+      if (isAuthAppEnv && fs.existsSync(`${resolveAppPath()}html-login`)) {
+        try {
+          logger.info(`Rename "html-login" directory to "html"`);
+          fs.rmSync(`${resolveAppPath()}html`, {
+            recursive: true,
+            force: true,
+          });
+          fs.renameSync(
+            `${resolveAppPath()}html-login`,
+            `${resolveAppPath()}html`
+          );
+        } catch (error) {
+          logger.error('Rename Error:' + JSON.stringify(error));
+        }
+      }
+      showNotification(
+        'Updates Installed',
+        'Updates are installed successfully!.'
+      );
       logger.info(`Update installed succesfully... ${newVersion}`);
       mainWindow.reload();
       // dialog
@@ -124,7 +152,8 @@ const downloadUpdate = async (
 };
 
 export const checkForUpdatesAndNotify = async (mainWindow: any) => {
-  const isAuthAppEnv = store.get('appEnv') === 'auth';
+  const buildType = store.get('appEnv');
+  const isAuthAppEnv = buildType === 'auth';
   const response = await axios({
     url: isAuthAppEnv ? releaseApiAuth : releaseApi,
     method: 'get',
@@ -132,7 +161,7 @@ export const checkForUpdatesAndNotify = async (mainWindow: any) => {
 
   logger.info('Check For Updates...');
   if (response.data?.date) {
-    const lastUpdate = store.get(`update-date-${getBuildType()}`); // update available
+    const lastUpdate = store.get(`update-date-${buildType}`); // update available
     logger.info(`Last Update: ${lastUpdate}`);
     logger.info(
       `Update comparison ${
