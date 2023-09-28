@@ -34,6 +34,11 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
     'Installing Updates',
     'Updates are being installed, it might take few minutes.'
   );
+  if (mainWindow) mainWindow.setProgressBar(-1);
+  fs.rmSync(`${resolveAppPath()}html`, {
+    recursive: true,
+    force: true,
+  });
   decompress(zipPath, resolveAppPath(), {
     plugins: [decompressTargz()],
   })
@@ -47,14 +52,9 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
         store.get(`app-version-${buildType}`) || '1.0.0'
       );
       store.set(`app-version-${buildType}`, newVersion);
-      if (mainWindow) mainWindow.setProgressBar(-1);
       if (isAuthAppEnv && fs.existsSync(`${resolveAppPath()}html-login`)) {
         try {
           logger.info(`Rename "html-login" directory to "html"`);
-          fs.rmSync(`${resolveAppPath()}html`, {
-            recursive: true,
-            force: true,
-          });
           fs.renameSync(
             `${resolveAppPath()}html-login`,
             `${resolveAppPath()}html`
