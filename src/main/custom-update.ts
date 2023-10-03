@@ -15,8 +15,9 @@ import fetch from 'node-fetch';
 
 const axios = require('axios');
 const Store = require('electron-store');
-const decompress = require('decompress');
-const decompressTargz = require('decompress-targz');
+const extract = require('extract-zip');
+// const decompress = require('decompress');
+// const decompressTargz = require('decompress-targz');
 // const AdmZip = require('adm-zip');
 
 const store = new Store();
@@ -39,9 +40,10 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
     recursive: true,
     force: true,
   });
-  decompress(zipPath, resolveAppPath(), {
-    plugins: [decompressTargz()],
-  })
+  // decompress(zipPath, resolveAppPath(), {
+  //   plugins: [decompressTargz()],
+  // })
+  extract(zipPath, { dir: resolveAppPath() })
     .then(() => {
       const buildType = store.get('appEnv');
       const isAuthAppEnv = buildType === 'auth';
