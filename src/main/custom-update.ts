@@ -2,6 +2,7 @@
 /* eslint-disable import/prefer-default-export */
 import { dialog } from 'electron';
 import fs from 'fs';
+import path from 'path';
 import {
   resolveAppPath,
   releaseApi,
@@ -15,10 +16,10 @@ import fetch from 'node-fetch';
 
 const axios = require('axios');
 const Store = require('electron-store');
-const extract = require('extract-zip');
-// const decompress = require('decompress');
-// const decompressTargz = require('decompress-targz');
-// const AdmZip = require('adm-zip');
+// const extract = require('extract-zip'); // doesn't work with gzip
+const decompress = require('decompress');
+const decompressTargz = require('decompress-targz');
+// const AdmZip = require('adm-zip'); // doesn't work with gzip
 
 const store = new Store();
 const zipPath = `${resolveAppPath()}html.zip`;
@@ -40,10 +41,14 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
     recursive: true,
     force: true,
   });
-  // decompress(zipPath, resolveAppPath(), {
-  //   plugins: [decompressTargz()],
-  // })
-  extract(zipPath, { dir: resolveAppPath() })
+
+  decompress(zipPath, resolveAppPath(), {
+    plugins: [decompressTargz()],
+    map: (file: any) => {
+      file.path = path.normalize(file.path);
+      return file;
+    },
+  })
     .then(() => {
       const buildType = store.get('appEnv');
       const isAuthAppEnv = buildType === 'auth';
@@ -81,6 +86,10 @@ const onUpdateDownloaded = (mainWindow: any, updateDate: string) => {
     })
     .catch((err: any) => {
       logger.error(`Update installation failed: ${err.message}`);
+      dialog.showErrorBox(
+        'Update installation failed!',
+        err.message || 'Unkown error occurred'
+      );
       logger.error(JSON.stringify(err));
     });
 };
@@ -171,6 +180,7 @@ export const checkForUpdatesAndNotify = async (mainWindow: any) => {
       ${new Date(lastUpdate) < new Date(response.data.date)}
       }`
     );
+
     if (!lastUpdate || new Date(lastUpdate) < new Date(response.data.date)) {
       dialog
         .showMessageBox({
